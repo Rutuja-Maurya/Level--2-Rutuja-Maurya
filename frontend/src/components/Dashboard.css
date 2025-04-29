@@ -1,0 +1,216 @@
+.dashboard {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard h1 {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.allocation-message {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.allocation-message.success {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.allocation-message.error {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card h3 {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.stat-card p {
+  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.5rem 0 0;
+}
+
+.stat-card.highlight {
+  background: #fff8e1;
+  border: 1px solid #ffd54f;
+}
+
+.efficiency-metrics {
+  margin-bottom: 2rem;
+}
+
+.efficiency-metrics h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.agent-status {
+  margin-bottom: 2rem;
+}
+
+.agent-status h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.agent-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.allocation-controls {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.allocation-button {
+  background: #42b983;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.allocation-button:hover {
+  background: #3aa876;
+}
+
+.allocation-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.allocation-note {
+  margin-top: 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.warehouse-list {
+  margin-top: 2rem;
+}
+
+.warehouse-list h2 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.warehouse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.warehouse-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.warehouse-card h3 {
+  color: #2c3e50;
+  margin: 0 0 1rem;
+}
+
+.warehouse-card p {
+  color: #666;
+  margin: 0.5rem 0;
+}
+
+.payment-structure {
+  margin: 2rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.payment-structure h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.payment-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.payment-cards .stat-card {
+  text-align: center;
+  background: white;
+  border: 1px solid #e0e0e0;
+}
+
+.payment-cards .stat-card h3 {
+  color: #2c3e50;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-cards .stat-card p {
+  color: #42b983;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.payment-note {
+  display: block;
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 1rem;
+  }
+  
+  .stats-container,
+  .metrics-grid,
+  .warehouse-grid {
+    grid-template-columns: 1fr;
+  }
+} 
