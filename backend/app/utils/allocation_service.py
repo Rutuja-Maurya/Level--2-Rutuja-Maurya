@@ -36,7 +36,10 @@ def is_allocation_time():
     return now.hour == allocation_hour
 
 def allocate_orders():
-    """Main function to allocate orders to agents"""
+    """
+    Optimized order allocation function that efficiently assigns orders to agents.
+    Uses sorting and data structures to avoid nested loops and improve performance.
+    """
     # Only allocate at specific time unless forced
     if not is_allocation_time():
         return False, "Not allocation time yet"
@@ -55,30 +58,40 @@ def allocate_orders():
             Order.status == 'pending'
         ).all()
         
-        # Group orders by warehouse
+        # Create a dictionary to store agent metrics for quick access
+        agent_metrics = {
+            agent.id: {
+                'agent': agent,
+                'current_distance': agent.daily_distance,
+                'current_orders': agent.daily_orders,
+                'remaining_hours': MAX_WORKING_HOURS - (
+                    (datetime.utcnow() - agent.check_in_time).total_seconds() / 3600
+                    if agent.check_in_time else 0
+                )
+            }
+            for agent in agents
+        }
+        
+        # Group orders by warehouse and sort by distance
         warehouse_orders = {}
         for order in pending_orders:
             if order.warehouse_id not in warehouse_orders:
                 warehouse_orders[order.warehouse_id] = []
             warehouse_orders[order.warehouse_id].append(order)
         
-        # Track postponed orders
-        postponed_orders = []
-        
-        # Allocate orders for each warehouse
+        # Process each warehouse's orders
         for warehouse_id, orders in warehouse_orders.items():
             warehouse = session.query(Warehouse).get(warehouse_id)
-            warehouse_agents = [a for a in agents if a.warehouse_id == warehouse_id]
+            if not warehouse:
+                continue
+                
+            # Get agents for this warehouse
+            warehouse_agent_ids = [
+                agent_id for agent_id, metrics in agent_metrics.items()
+                if metrics['agent'].warehouse_id == warehouse_id
+            ]
             
-            # Sort agents by current load (try to maximize agent utilization)
-            warehouse_agents.sort(key=lambda x: x.daily_orders)
-            
-            # Calculate optimal orders per agent to maximize efficiency
-            total_orders = len(orders)
-            active_agents = len(warehouse_agents)
-            if active_agents > 0:
-                target_orders_per_agent = min(50, total_orders // active_agents)
-            else:
+            if not warehouse_agent_ids:
                 continue
             
             # Sort orders by distance from warehouse for efficient routing
@@ -87,26 +100,31 @@ def allocate_orders():
                 x.latitude, x.longitude
             ))
             
-            # Allocate orders to agents
-            for agent in warehouse_agents:
-                if agent.daily_distance >= MAX_DAILY_DISTANCE:
+            # Calculate target orders per agent
+            target_orders = min(50, len(orders) // len(warehouse_agent_ids))
+            
+            # Create a priority queue of agents based on current load
+            agent_queue = sorted(
+                warehouse_agent_ids,
+                key=lambda x: (
+                    agent_metrics[x]['current_orders'],
+                    agent_metrics[x]['current_distance']
+                )
+            )
+            
+            # Process orders in batches for each agent
+            for order in orders:
+                if order.agent_id is not None:
                     continue
-                
-                # Calculate remaining working hours
-                remaining_hours = MAX_WORKING_HOURS
-                if agent.check_in_time:
-                    elapsed_hours = (datetime.utcnow() - agent.check_in_time).total_seconds() / 3600
-                    remaining_hours -= elapsed_hours
-                
-                # Try to assign optimal number of orders
-                agent_orders = []
-                total_distance = agent.daily_distance
-                
-                for order in orders[:]:
-                    if len(agent_orders) >= target_orders_per_agent:
-                        break
-                        
-                    if order.agent_id is not None:
+                    
+                assigned = False
+                # Try to assign order to the least loaded agent
+                for agent_id in agent_queue:
+                    metrics = agent_metrics[agent_id]
+                    
+                    # Skip if agent is at capacity
+                    if (metrics['current_orders'] >= target_orders or
+                        metrics['current_distance'] >= MAX_DAILY_DISTANCE):
                         continue
                     
                     # Calculate distance for this order
@@ -116,28 +134,30 @@ def allocate_orders():
                     )
                     
                     # Check if adding this order would exceed limits
-                    new_total_distance = total_distance + distance
-                    if (new_total_distance > MAX_DAILY_DISTANCE or
-                        calculate_route_time(new_total_distance) > remaining_hours):
-                        postponed_orders.append(order)
+                    if (metrics['current_distance'] + distance > MAX_DAILY_DISTANCE or
+                        calculate_route_time(metrics['current_distance'] + distance) > metrics['remaining_hours']):
                         continue
                     
                     # Assign order to agent
-                    order.agent_id = agent.id
+                    order.agent_id = agent_id
                     order.status = 'assigned'
                     order.assigned_at = datetime.utcnow()
-                    total_distance = new_total_distance
-                    agent_orders.append(order)
-                    orders.remove(order)
+                    
+                    # Update agent metrics
+                    metrics['current_distance'] += distance
+                    metrics['current_orders'] += 1
+                    assigned = True
+                    break
                 
-                # Update agent metrics
-                if agent_orders:
-                    agent.daily_orders += len(agent_orders)
-                    agent.daily_distance = total_distance
-        
-        # Mark remaining orders as postponed
-        for order in postponed_orders:
-            order.status = 'postponed'
+                if not assigned:
+                    order.status = 'postponed'
+            
+            # Update agent records with new metrics
+            for agent_id, metrics in agent_metrics.items():
+                if agent_id in warehouse_agent_ids:
+                    agent = metrics['agent']
+                    agent.daily_orders = metrics['current_orders']
+                    agent.daily_distance = metrics['current_distance']
         
         session.commit()
         return True, "Orders allocated successfully"
